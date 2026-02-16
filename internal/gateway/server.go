@@ -142,7 +142,7 @@ func (g *Gateway) Start() error {
 	http.HandleFunc("/api/chat", g.handleChat)
 
 	// Serve embedded frontend files
-	http.Handle("/", http.FileServer(GetFrontendFS()))
+	http.Handle("/", DebugFileServer(GetFrontendFS()))
 
 	addr := fmt.Sprintf(":%d", g.Port)
 	log.Printf("🐝 HiveClaw gateway listening on %s", addr)

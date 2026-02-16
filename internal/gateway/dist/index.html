@@ -1,14 +1,98 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
-    <script type="module" crossorigin src="/assets/index-c2zZYIS8.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-GC3PO9x4.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HiveClaw 🐝</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐝</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a; 
+      color: #f8fafc; 
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    #root { flex: 1; display: flex; flex-direction: column; }
+    .loading {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .loading-emoji { font-size: 4rem; animation: bounce 1s infinite; }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .loading-text { color: #94a3b8; }
+    .fallback { 
+      padding: 2rem; 
+      max-width: 600px; 
+      margin: 0 auto;
+      text-align: center;
+    }
+    .fallback h1 { margin-bottom: 1rem; }
+    .fallback p { color: #94a3b8; margin-bottom: 1rem; }
+    .fallback code { 
+      background: #1e293b; 
+      padding: 0.5rem 1rem; 
+      border-radius: 0.5rem;
+      display: block;
+      margin: 1rem 0;
+    }
+    .status { 
+      padding: 1rem; 
+      background: #1e293b; 
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+    }
+    .status.ok { border-left: 4px solid #22c55e; }
+    .status.error { border-left: 4px solid #ef4444; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="loading">
+      <div class="loading-emoji">🐝</div>
+      <div class="loading-text">Loading HiveClaw...</div>
+    </div>
+  </div>
+
+  <!-- Simple fallback that tests the API -->
+  <script>
+    // Test API connection
+    fetch('/api/health')
+      .then(r => r.json())
+      .then(data => {
+        console.log('API Health:', data);
+        if (data.status === 'ok') {
+          document.querySelector('.loading-text').textContent = 'Connected! Version ' + data.version;
+          document.querySelector('.loading-text').style.color = '#22c55e';
+        }
+      })
+      .catch(err => {
+        console.error('API Error:', err);
+        document.getElementById('root').innerHTML = `
+          <div class="fallback">
+            <h1>🐝 HiveClaw</h1>
+            <p>Dashboard is loading but couldn't connect to API.</p>
+            <div class="status error">
+              <strong>Error:</strong> ${err.message}
+            </div>
+            <p style="margin-top: 2rem;">Try the API directly:</p>
+            <code>curl http://localhost:${window.location.port}/api/health</code>
+          </div>
+        `;
+      });
+  </script>
+
+  <!-- React app loads here -->
+  <script type="module" crossorigin src="/assets/index-c2zZYIS8.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-GC3PO9x4.css">
+</body>
 </html>
