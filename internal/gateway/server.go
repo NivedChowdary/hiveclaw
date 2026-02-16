@@ -141,9 +141,8 @@ func (g *Gateway) Start() error {
 	http.HandleFunc("/api/sessions", g.handleSessions)
 	http.HandleFunc("/api/chat", g.handleChat)
 
-	// Serve static files (React frontend)
-	fs := http.FileServer(http.Dir("./web/frontend/dist"))
-	http.Handle("/", fs)
+	// Serve embedded frontend files
+	http.Handle("/", http.FileServer(GetFrontendFS()))
 
 	addr := fmt.Sprintf(":%d", g.Port)
 	log.Printf("🐝 HiveClaw gateway listening on %s", addr)
