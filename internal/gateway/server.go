@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/nanilabs/hiveclaw/internal/llm"
 	"github.com/nanilabs/hiveclaw/internal/session"
 )
 
@@ -56,12 +57,14 @@ type Client struct {
 
 // Gateway is the main WebSocket server
 type Gateway struct {
-	Port       int
-	ConfigPath string
-	Clients    map[string]*Client
-	Sessions   *session.Manager
-	mu         sync.RWMutex
-	hub        *Hub
+	Port         int
+	ConfigPath   string
+	Clients      map[string]*Client
+	Sessions     *session.Manager
+	LLM          llm.Provider
+	SystemPrompt string
+	mu           sync.RWMutex
+	hub          *Hub
 }
 
 // Hub manages all client connections
@@ -345,9 +348,49 @@ func (g *Gateway) handleChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Route to LLM
 	w.Header().Set("Content-Type", "application/json")
+
+	// Check if LLM is configured
+	if g.LLM == nil {
+		json.NewEncoder(w).Encode(map[string]string{
+			"response": fmt.Sprintf("Echo: %s (LLM not configured)", req.Message),
+		})
+		return
+	}
+
+	// Get or create session
+	sessionID := req.SessionID
+	if sessionID == "" {
+		sessionID = "main"
+	}
+	g.Sessions.GetOrCreate(sessionID)
+
+	// Add user message to session
+	g.Sessions.AddMessage(sessionID, "user", req.Message)
+
+	// Build messages for LLM
+	messages, _ := g.Sessions.GetMessages(sessionID)
+	llmMessages := make([]llm.Message, len(messages))
+	for i, m := range messages {
+		llmMessages[i] = llm.Message{Role: m.Role, Content: m.Content}
+	}
+
+	// Call LLM
+	resp, err := g.LLM.Chat(llmMessages, llm.Options{
+		System: g.SystemPrompt,
+	})
+	if err != nil {
+		log.Printf("LLM error: %v", err)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error": fmt.Sprintf("LLM error: %v", err),
+		})
+		return
+	}
+
+	// Add assistant response to session
+	g.Sessions.AddMessage(sessionID, "assistant", resp.Content)
+
 	json.NewEncoder(w).Encode(map[string]string{
-		"response": fmt.Sprintf("Echo: %s", req.Message),
+		"response": resp.Content,
 	})
 }

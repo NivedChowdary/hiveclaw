@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 )
@@ -199,6 +200,15 @@ func (o *OpenRouterProvider) Chat(messages []Message, opts Options) (*Response, 
 		opts.MaxTokens = 4096
 	}
 
+	log.Printf("OpenRouter Chat: %d messages", len(messages))
+	for i, m := range messages {
+		preview := m.Content
+		if len(preview) > 50 {
+			preview = preview[:50]
+		}
+		log.Printf("  [%d] %s: %s", i, m.Role, preview)
+	}
+
 	// OpenRouter uses OpenAI-compatible format
 	reqBody := map[string]interface{}{
 		"model":      opts.Model,
@@ -207,6 +217,7 @@ func (o *OpenRouterProvider) Chat(messages []Message, opts Options) (*Response, 
 	}
 
 	body, err := json.Marshal(reqBody)
+	log.Printf("Request body: %s", string(body))
 	if err != nil {
 		return nil, err
 	}

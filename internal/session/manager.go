@@ -38,12 +38,17 @@ func NewManager() *Manager {
 	}
 }
 
-// Create creates a new session
+// Create creates a new session with auto-generated ID
 func (m *Manager) Create(name string) *Session {
+	id := fmt.Sprintf("sess_%d", time.Now().UnixNano())
+	return m.CreateWithID(id, name)
+}
+
+// CreateWithID creates a session with a specific ID
+func (m *Manager) CreateWithID(id, name string) *Session {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	id := fmt.Sprintf("sess_%d", time.Now().UnixNano())
 	if name == "" {
 		name = fmt.Sprintf("Session %s", time.Now().Format("15:04"))
 	}
@@ -58,6 +63,28 @@ func (m *Manager) Create(name string) *Session {
 		Metadata:  make(map[string]interface{}),
 	}
 
+	m.sessions[id] = sess
+	return sess
+}
+
+// GetOrCreate returns existing session or creates one with the given ID
+func (m *Manager) GetOrCreate(id string) *Session {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if sess, ok := m.sessions[id]; ok {
+		return sess
+	}
+
+	sess := &Session{
+		ID:        id,
+		Name:      id,
+		AgentID:   "main",
+		Messages:  []Message{},
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+		Metadata:  make(map[string]interface{}),
+	}
 	m.sessions[id] = sess
 	return sess
 }
